@@ -1,0 +1,31 @@
+/* AIdvisors — styles. Tokens : tokens.css (généré depuis design/aidvisors/DESIGN.md). */
+@font-face { font-family: 'Bebas Neue'; src: url('../fonts/bebas-neue-400.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Manrope'; src: url('../fonts/manrope-var.woff2') format('woff2'); font-weight: 200 800; font-display: swap; }
+
+*, *::before, *::after { box-sizing: border-box; }
+html { color-scheme: dark light; -webkit-text-size-adjust: 100%; }
+body { margin: 0; min-height: 100dvh; background: var(--color-background); color: var(--color-text);
+  font: 400 1rem/1.55 var(--font-family-text); }
+h1, h2, h3, .display { font-family: var(--font-family-display); font-weight: 400; letter-spacing: .02em; line-height: .95; margin: 0; text-transform: uppercase; }
+button, input, textarea, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* --- Avatars --------------------------------------------------------------------------- */
+.av { display: block; overflow: visible; }
+.av .av-ring { opacity: .0; transition: opacity var(--motion-duration-base) var(--motion-easing), stroke var(--motion-duration-base); }
+.av.av-mood-go .av-ring { opacity: 1; stroke: var(--color-success); }
+.av.av-mood-cond .av-ring { opacity: 1; stroke: var(--color-warning); }
+.av.av-mood-nogo .av-ring { opacity: 1; stroke: var(--color-error); }
+.av .av-body, .av .av-eyes, .av .av-mouth { transform-box: fill-box; transform-origin: center; }
+.av-idle .av-body { animation: av-breathe 4.2s ease-in-out infinite; }
+.av-idle .av-eyes { animation: av-blink 5.6s infinite; }
+.av-curious .av-eyes { animation-duration: 4.1s; }
+.av-stern .av-eyes { animation-duration: 7.3s; }
+.av-speaking .av-mouth { animation: av-talk .32s ease-in-out infinite alternate; }
+.av-speaking .av-body { animation-duration: 2.4s; }
+@keyframes av-breathe { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.6px); } }
+@keyframes av-blink { 0%, 93%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
+@keyframes av-talk { from { transform: scaleY(1); } to { transform: scaleY(2.4) translateY(1px); } }
+@media (prefers-reduced-motion: reduce) { .av *, .av { animation: none !important; transition: none !important; } }
+:root[data-motion="reduced"] .av, :root[data-motion="reduced"] .av * { animation: none !important; transition: none !important; }
