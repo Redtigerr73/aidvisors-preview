@@ -108,7 +108,7 @@ export function showOnboarding(app, root) {
       h('p', { class: 'kicker' }, t('app.tagline')),
       h('h2', { id: 'onboard-title' }, t('onboard.title')),
       h('p', {}, t('onboard.body')),
-      h('p', { class: 'ai-banner', role: 'note' }, t('onboard.ai'), ' ', t('ai.notice')),
+      h('p', { class: 'onboard-note', role: 'note' }, t('onboard.ai'), ' ', t('ai.notice')),
       h('h3', { class: 'field-label' }, t('onboard.core')), cores,
       h('div', { class: 'toolbar' }, h('button', { type: 'button', class: 'btn btn-primary btn-lg', onclick: close }, t('onboard.start')))));
   root.append(overlay);

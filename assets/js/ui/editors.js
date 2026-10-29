@@ -36,7 +36,7 @@ export function renderProfiles(app, main, id) {
   });
   const row = (p, i) => h('li', { class: `prow${p.enabled ? '' : ' is-off'}` },
     h('span', { class: 'prow-av' }, render(avatarTree(p.avatar, { state: 'idle', mood: null, size: 52 }))),
-    h('a', { href: `#/profiles/${p.id}`, class: 'prow-main' }, h('span', { class: 'prow-name' }, p.name), h('span', { class: 'prow-title' }, `${p.title} · ${t(`role.${p.role}`)}`)),
+    h('a', { href: `#/profiles/${p.id}`, class: 'prow-main' }, h('span', { class: 'prow-name' }, p.name), h('span', { class: 'prow-title' }, p.title === t(`role.${p.role}`) ? p.title : `${p.title} · ${t(`role.${p.role}`)}`)),
     h('label', { class: 'switch' }, h('input', { type: 'checkbox', checked: p.enabled, 'aria-label': `${t('profiles.enabled')} · ${p.name}`,
       onchange: (e) => { patchProfile(app, p.id, { enabled: e.target.checked }); app.render(); } }), h('span', { 'aria-hidden': 'true' }, t('profiles.enabled'))),
     h('span', { class: 'prow-move' },

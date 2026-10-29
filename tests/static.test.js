@@ -54,3 +54,28 @@ test('the real mode is only a placeholder: providers announced as soon, no netwo
     assert.doesNotMatch(readFileSync(f, 'utf8'), /\bfetch\s*\(|XMLHttpRequest|new WebSocket|sendBeacon|EventSource/, f);
   }
 });
+
+test('direction B: buttons are rectangular, never pills', () => {
+  for (const f of files(join(ROOT, 'assets', 'css'), '.css')) {
+    const css = readFileSync(f, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    for (const m of css.matchAll(/([^{}]*button[^{}]*)\{([^}]*)\}/g)) {
+      assert.doesNotMatch(m[2], /border-radius\s*:\s*999px/, `${f} : bouton en pilule (${m[1].trim()})`);
+    }
+  }
+});
+
+test('direction B: no coloured left rail and no rounded cards in the styles', () => {
+  for (const f of files(join(ROOT, 'assets', 'css'), '.css')) {
+    const css = readFileSync(f, 'utf8');
+    assert.doesNotMatch(css, /border-left\s*:\s*([2-9]|\d{2,})px/, `${f} : liseré gauche`);
+    assert.doesNotMatch(css, /inset\s+[2-9]px\s+0\s+0/, `${f} : liseré gauche en ombre`);
+    for (const m of css.matchAll(/border-radius\s*:\s*([^;}]+)/g)) {
+      for (const v of m[1].matchAll(/(\d+(?:\.\d+)?)px/g)) {
+        const n = Number(v[1]);
+        assert.ok(n <= 4 || n >= 999, `${f} : rayon ${n}px (« ${m[0]} »)`);
+      }
+    }
+  }
+  const tokens = readFileSync(join(ROOT, 'assets', 'css', 'tokens.css'), 'utf8');
+  assert.match(tokens, /--radius:\s*[0-4]px/);
+});

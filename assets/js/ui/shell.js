@@ -10,7 +10,7 @@ const COLORS = ['#E6B85C', '#6FCF97', '#5CB8E6', '#F29A4E', '#FF8A80', '#D9B26B'
 function inlineEdit(label, value, onSave) {
   const input = h('input', { type: 'text', class: 'inline-edit', value, maxlength: 60, 'aria-label': t('common.rename') });
   const done = (ok) => { const v = input.value.trim(); input.replaceWith(label); if (ok && v) onSave(v); };
-  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') done(true); if (e.key === 'Escape') done(false); });
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') done(true); if (e.key === 'Escape') { e.stopPropagation(); done(false); } });
   input.addEventListener('blur', () => done(true));
   label.replaceWith(input);
   input.select();
@@ -51,7 +51,7 @@ export function renderSidebar(app, nav, route) {
   };
   const archivedConvs = app.ws.conversations.filter((c) => c.archived);
   clear(nav).append(
-    h('nav', { class: 'nav', 'aria-label': t('nav.menu') }, NAV.map(([href, key]) => h('a', { href, class: `nav-link${active(href) ? ' is-active' : ''}` }, t(key)))),
+    h('nav', { class: 'nav drawer-nav', 'aria-label': t('nav.menu') }, NAV.map(([href, key]) => h('a', { href, class: `nav-link${active(href) ? ' is-active' : ''}` }, t(key)))),
     h('div', { class: 'projects' },
       h('div', { class: 'projects-head' }, h('span', {}, t('nav.projects')),
         h('button', { type: 'button', class: 'mini', onclick: () => app.createProject(COLORS[projects.length % COLORS.length]) }, `+ ${t('nav.newProject')}`)),
@@ -63,20 +63,38 @@ export function renderSidebar(app, nav, route) {
           h('button', { type: 'button', class: 'mini', onclick: () => app.archiveConversation(c.id, false) }, t('common.unarchive'))))])) : null));
 }
 
+let escapeBound = false;
+let closeDrawer = () => {};
+
 export function renderShell(app, root, route) {
-  const sidebar = h('aside', { class: 'sidebar', id: 'sidebar' });
-  const main = h('main', { class: 'main', id: 'main', tabindex: '-1' });
-  const toggle = h('button', { type: 'button', class: 'menu-btn', 'aria-controls': 'sidebar', 'aria-expanded': 'false',
-    onclick: () => { const open = !root.classList.contains('nav-open'); root.classList.toggle('nav-open', open); toggle.setAttribute('aria-expanded', String(open)); } },
-  h('span', { class: 'bars', 'aria-hidden': 'true' }), h('span', { class: 'visually-hidden' }, t('nav.menu')));
+  const drawer = h('aside', { class: 'drawer', id: 'drawer', 'aria-label': t('nav.projects') });
+  const main = h('main', { class: 'content', id: 'main', tabindex: '-1' });
+  const isActive = (href) => (href === '#/' ? route.name === 'home' : `#/${route.name}` === href);
+  root.classList.remove('drawer-open'); // un nouveau rendu (navigation) ferme toujours le tiroir
+  const setOpen = (open) => {
+    root.classList.toggle('drawer-open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+    main.inert = open;
+    if (open) [...drawer.querySelectorAll('a, button, input')].find((el) => el.offsetParent !== null)?.focus();
+    else if (drawer.contains(document.activeElement)) toggle.focus();
+  };
+  closeDrawer = () => setOpen(false);
+  const toggle = h('button', { type: 'button', class: 'btn-top', 'aria-controls': 'drawer', 'aria-expanded': 'false',
+    onclick: () => setOpen(!root.classList.contains('drawer-open')) }, h('span', { class: 'bars', 'aria-hidden': 'true' }), h('span', { class: 'btn-top-label' }, t('nav.sessions')));
   clear(root).append(
-    h('header', { class: 'topbar' }, toggle,
+    h('header', { class: 'topbar' },
       h('a', { href: '#/', class: 'brand' }, h('span', { class: 'brand-mark', 'aria-hidden': 'true' }), h('span', { class: 'brand-name display' }, t('app.name'))),
-      h('span', { class: 'ai-pill' }, t('ai.short'))),
-    h('div', { class: 'body' }, sidebar,
-      h('div', { class: 'content' }, h('p', { class: 'ai-banner', role: 'note' }, t('ai.notice')), main)),
+      h('nav', { class: 'topnav', 'aria-label': t('nav.menu') }, NAV.map(([href, key]) => h('a', { href, class: `topnav-link${isActive(href) ? ' is-active' : ''}`,
+        'aria-current': isActive(href) ? 'page' : null }, t(key)))),
+      toggle,
+      h('span', { class: 'ai-pill', title: t('ai.notice') }, t('ai.short'))),
+    h('p', { class: 'ai-banner', role: 'note' }, h('span', { class: 'lbl-long' }, t('ai.notice')), h('span', { class: 'lbl-short' }, t('ai.banner'))),
+    main,
+    drawer,
+    h('div', { class: 'scrim', 'aria-hidden': 'true', onclick: () => setOpen(false) }),
     h('div', { class: 'toasts', 'aria-live': 'polite' }));
-  renderSidebar(app, sidebar, route);
-  sidebar.addEventListener('click', (e) => { if (e.target.closest('a')) root.classList.remove('nav-open'); });
-  return { main, sidebar };
+  renderSidebar(app, drawer, route);
+  drawer.addEventListener('click', (e) => { if (e.target.closest('a')) setOpen(false); });
+  if (!escapeBound) { escapeBound = true; document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); }); }
+  return { main, sidebar: drawer };
 }

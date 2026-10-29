@@ -4,50 +4,58 @@ import { h, render, SVG_NS } from '../dom.js';
 import { t } from '../i18n.js';
 import { avatarTree } from '../avatar.js';
 
-export function renderArena(profiles, { onSeat } = {}) {
+/** Table vue de dessus + liste des sièges, pilotées ensemble (siège qui parle, votes). */
+export function renderBoard(profiles, { onSeat } = {}) {
   const active = profiles.filter((p) => p.enabled).sort((a, b) => a.order - b.order);
-  const moderator = active.find((p) => p.role === 'moderator');
-  const ring = active.filter((p) => p !== moderator);
-  const spot = h('div', { class: 'spot', 'aria-hidden': 'true' });
+  const label = h('div', { class: 'table-now', 'aria-hidden': 'true' });
+  const table = h('div', { class: 'table', role: 'img', 'aria-label': t('col.council'), style: { '--per-row': String(Math.max(1, Math.ceil(active.length / 2))) } },
+    h('div', { class: 'table-top', 'aria-hidden': 'true' }), label);
+  const roster = h('ol', { class: 'roster' });
   const seats = new Map();
-  const stage = h('div', { class: 'arena', role: 'group', 'aria-label': t('nav.home') }, spot, h('div', { class: 'table', 'aria-hidden': 'true' }));
-
-  const place = (p, x, y, front) => {
-    const avatar = h('span', { class: 'seat-av' }, render(avatarTree(p.avatar, { state: 'idle', mood: null, size: 64 })));
-    const vote = h('span', { class: 'seat-vote', 'aria-live': 'off' });
-    const seat = h('button', { type: 'button', class: `seat${front ? ' seat--front' : ''}`, title: `${p.name} · ${p.title}`,
-      style: { left: `${x}%`, top: `${y}%` }, onclick: () => onSeat?.(p) }, avatar, h('span', { class: 'seat-name' }, p.name), vote);
-    seats.set(p.id, { seat, avatar, vote, p, x });
-    stage.append(seat);
+  // deux rangées autour d'une table ovale, abscisses régulières : aucun avatar ne se chevauche aux extrémités
+  const topCount = Math.ceil(active.length / 2);
+  const spot = (i) => {
+    const row = i < topCount ? 0 : 1;
+    const n = row === 0 ? topCount : active.length - topCount;
+    const k = row === 0 ? i : i - topCount;
+    const x = n === 1 ? 50 : 12 + (76 * k) / (n - 1);
+    const dy = Math.min(32, Math.max(20, 40 * Math.sqrt(Math.max(0, 1 - ((x - 50) / 46) ** 2))));
+    return { x, y: row === 0 ? 50 - dy : 50 + dy };
   };
-  ring.forEach((p, i) => {
-    // abscisses régulières sur une ellipse : même écart horizontal entre voisins, aucun chevauchement aux extrémités
-    const x = ring.length === 1 ? 50 : 7 + (86 * i) / (ring.length - 1);
-    const k = (x - 50) / 45;
-    place(p, x, 76 - 58 * Math.sqrt(Math.max(0, 1 - k * k)), false);
+  active.forEach((p, i) => {
+    const { x, y } = spot(i);
+    const tav = h('span', { class: 'tseat', style: { left: `${x}%`, top: `${y}%` }, title: p.name },
+      render(avatarTree(p.avatar, { state: 'idle', mood: null, size: 44 })));
+    const rav = h('span', { class: 'r-av' }, render(avatarTree(p.avatar, { state: 'idle', mood: null, size: 34 })));
+    const vote = h('span', { class: 'r-vote' }, p.role === 'moderator' ? '' : '…');
+    const row = h('li', { class: 'r' }, h('button', { type: 'button', class: 'r-btn', onclick: () => onSeat?.(p), title: `@${p.name}` },
+      rav, h('span', { class: 'r-id' }, h('span', { class: 'r-name' }, p.name), h('span', { class: 'r-sub' }, h('span', { class: 'r-title' }, p.title), vote))));
+    table.append(tav);
+    roster.append(row);
+    seats.set(p.id, { tav, rav, vote, row, p });
   });
-  if (moderator) place(moderator, 50, 86, true);
-
+  const svgs = (s) => [s.tav.firstChild, s.rav.firstChild].filter(Boolean);
   return {
-    el: stage,
+    table, roster,
     speak(id) {
       for (const [pid, s] of seats) {
         const on = pid === id;
-        s.seat.classList.toggle('is-speaking', on);
-        s.avatar.firstChild?.classList.toggle('av-speaking', on);
+        s.row.classList.toggle('is-speaking', on);
+        s.tav.classList.toggle('is-speaking', on);
+        svgs(s).forEach((svg) => svg.classList.toggle('av-speaking', on));
       }
       const s = seats.get(id);
-      spot.classList.toggle('is-on', Boolean(s));
-      if (s) { spot.style.left = `${s.x}%`; spot.style.setProperty('--spot-y', s.seat.style.top); }
+      label.textContent = s ? t('live.speaking', { name: s.p.name }) : (id === 'founder' ? t('live.speaking', { name: t('debate.you') }) : '');
     },
     vote(id, v) {
       const s = seats.get(id);
       if (!s || !v) return;
       s.vote.textContent = t(`votes.${v}`);
-      s.vote.className = `seat-vote vote-${v}`;
-      const svg = s.avatar.firstChild;
-      svg?.classList.remove('av-mood-go', 'av-mood-cond', 'av-mood-nogo');
-      svg?.classList.add({ GO: 'av-mood-go', GO_SOUS_CONDITION: 'av-mood-cond', NO_GO: 'av-mood-nogo' }[v]);
+      s.vote.className = `r-vote vote-${v}`;
+      for (const svg of svgs(s)) {
+        svg.classList.remove('av-mood-go', 'av-mood-cond', 'av-mood-nogo');
+        svg.classList.add({ GO: 'av-mood-go', GO_SOUS_CONDITION: 'av-mood-cond', NO_GO: 'av-mood-nogo' }[v]);
+      }
     },
   };
 }

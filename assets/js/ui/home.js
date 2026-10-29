@@ -21,21 +21,23 @@ export function renderHome(app, main) {
     h('span', { class: 'cast-av', style: { '--i': i } }, render(avatarTree(p.avatar, { state: 'idle', mood: null, size: 56 })))));
 
   const prepared = Object.values(PREPARED).map((d) => h('button', { type: 'button', class: 'prep', onclick: () => app.startConversation({ preparedId: d.id }) },
-    h('span', { class: 'prep-title display' }, d.title), h('span', { class: 'prep-q' }, d.question)));
+    h('span', { class: 'prep-title display' }, d.title), h('span', { class: 'prep-q' }, d.question), h('span', { class: 'prep-go', 'aria-hidden': 'true' }, '→')));
 
   const recent = [...app.ws.conversations].filter((c) => !c.archived).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 6);
 
-  clear(main).append(
-    h('section', { class: 'hero' },
+  clear(main).append(h('div', { class: 'home' },
+    h('section', { class: 'home-main' },
       h('p', { class: 'kicker' }, t('home.kicker')),
-      h('h1', { class: 'hero-title' }, t('home.title')),
+      h('h1', { class: 'hero-title display' }, t('home.title')),
       h('p', { class: 'hero-sub' }, t('home.sub')),
-      cast, form),
-    h('section', { class: 'block' }, h('h2', { class: 'block-title' }, t('home.prepared')), h('div', { class: 'preps' }, prepared)),
-    recent.length ? h('section', { class: 'block' }, h('h2', { class: 'block-title' }, t('home.recent')),
-      h('ul', { class: 'recent' }, recent.map((c) => h('li', {}, h('a', { href: `#/c/${c.id}` },
+      cast, form,
+      h('h2', { class: 'block-title display' }, t('home.prepared')), h('div', { class: 'preps' }, prepared)),
+    h('aside', { class: 'home-side' },
+      h('h2', { class: 'block-title display' }, t('home.recent')),
+      recent.length ? h('ul', { class: 'recent' }, recent.map((c) => h('li', {}, h('a', { href: `#/c/${c.id}` },
         h('span', { class: 'recent-title' }, c.title), h('span', { class: 'recent-meta' }, formatDate(c.createdAt), ' · ',
-          c.founderDecision ? t(`founder.${c.founderDecision}`) : t(`votes.${c.debate.conclusion.decision.outcome}`))))))) : null);
+          c.founderDecision ? t(`founder.${c.founderDecision}`) : t(`votes.${c.debate.conclusion.decision.outcome}`))))))
+        : h('p', { class: 'muted' }, t('home.noRecent')))));
   area.focus({ preventScroll: true });
 }
 

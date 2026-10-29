@@ -117,7 +117,7 @@ export const app = {
         h('a', { href: '#/settings', class: 'btn btn-primary' }, t('nav.settings'))));
     }
     if (!this.ws.onboarded) showOnboarding(this, root);
-    if (moved) window.scrollTo(0, 0);
+    if (moved) { window.scrollTo(0, 0); main.scrollTop = 0; }
   },
 };
 
